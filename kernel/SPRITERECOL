@@ -1,0 +1,5 @@
+Sprite recoloring:
+
+If the recolor table pointer is set NULL (by the function which will be
+provided for this), the kernel should restore the default table, so sprites
+will keep working proper with no recolor.

@@ -1,0 +1,24 @@
+Video mode stuff.
+
+
+
+26 row descriptors:
+
+
+byte 0: ROM tileset to use (discarded, this byte is unused)
+byte 1: bits 0-2: X shift to the left
+        bit    3: Enable Color 0 reload if set (Removed, global)
+        bit    4: Enable sprites if set (Not implemented)
+        bit    7: SPI RAM address, bank
+byte 2: SPI RAM address, low
+byte 3: SPI RAM address, high
+
+Possibly I will just kill off bit 3 and 4, bit 3 becoming a global setting.
+There is no much sense to these without the logical scanline system, the 200px
+SPI RAM bitmap mode would be used for splitscreens.
+
+Two other vars:
+
+Y shift: 0-7 pixels to the top for vertical scrolling
+Split point: 0 - 199 where SPI RAM bitmap mode should begin
+SPI RAM bitmap start address (3 bytes).

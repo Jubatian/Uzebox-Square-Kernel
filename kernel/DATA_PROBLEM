@@ -1,0 +1,13 @@
+For some reason the .data section completely disregards any linker script
+setting here, overlapping with whatever is placed in the beginning of the RAM,
+no matter the method.
+
+Maybe it will be necessary to allocate kernel stuff on the top of the RAM
+instead, and place RAM tiles below that.
+
+Probalby the key is that for some weird reason the AVR data memory starts at
+0x800060, which address doesn't seem to relate anything on the real hardware.
+Somebody somewhere might have placed some hack to "fix" this for the ATmega,
+so it is impossible to adjust allocation by the linker script.
+
+It just works if it is left alone.

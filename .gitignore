@@ -1,0 +1,5 @@
+packrom/
+**/bin/
+**/obj/
+**/dep/
+**/bundle/

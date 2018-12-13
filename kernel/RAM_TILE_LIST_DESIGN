@@ -1,0 +1,61 @@
+RAM tile list ideas
+
+Try to process it within the video mode (no preprocessing needed, more user
+time, and most notably more free RAM!).
+
+List element:
+
+- RAM tile column (never reached => end of list)
+- RAM tile value
+- Next RAM tile list index
+
+Start with first "next column" value loaded in r18
+
+	in    r0,      SPI_DR
+	out   SPI_DR,  r0      ; ( 2)
+	cpi   r18,     (column)
+	breq  ramtile_(column)
+	mul   r0,      r19     ; ( 6) r19: 32
+	movw  ZL,      r0      ; ( 7)
+	add   ZH,      r20     ; ( 8) r20: ROM tileset base
+	add   ZL,      r21     ; ( 9) r21: Row select
+	lpm   r0,      Z+
+	st    Y+,      r0
+	lpm   r0,      Z+
+	st    Y+,      r0
+	lpm   r0,      Z+
+	st    Y+,      r0
+	lpm   r0,      Z+
+	st    Y+,      r0      ; (29)
+	rjmp  common(column)   ; (31)
+ramtile(column):
+	ld    r0,      X+      ; ( 7)
+	ld    XL,      X
+	ld    r18,     X+
+	mul   r0,      r19     ; (13) r19: 32
+	movw  ZL,      r0      ; (14)
+	add   ZL,      r21     ; (15) r21: Row select
+	ld    r0,      Z+
+	st    Y+,      r0
+	ld    r0,      Z+
+	st    Y+,      r0
+	ld    r0,      Z+
+	st    Y+,      r0
+	ld    r0,      Z+
+	st    Y+,      r0      ; (31)
+common(column):
+
+This should still fit OK given that the mixer is dropped (only sample output
+during video display generation). 1742 cycles assuming only tile count (67
+total cycles taken for a tile, 26 tiles generated).
+
+Preprocessing: Possibly just a color mask, to get 3 bits free for importance.
+
+	ld    r18,     X
+	andi  r18,     0x1F
+	st    X,       r18
+	subi  XL,      253
+
+Unrolled this takes 510 cycles (6 x 85), fits OK in a normal lead-in.
+
+

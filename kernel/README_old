@@ -1,0 +1,133 @@
+Square kernel
+
+
+This Uzebox kernel is designed for the SPI RAM expanded Uzebox, providing a
+square pixels video mode at 200x200 resolution and 3 channel audio.
+
+
+The video mode:
+
+- 4.5 cycles / pixel, 16 color mode.
+- Background VRAM for 256 ROM tiles in SPI RAM.
+- RAM tiles as overlay, up to 85 may be placed on the display.
+- 26 rows, each individually horizontally scrollable for parallaxing.
+- Color 0 (Bg. color) can be replaced on every scanline.
+- Split screen with SPI RAM bitmap (200 pixels wide) on bottom.
+
+Split screen:
+
+When splitting screen, a colored line (color independent of each palette) is
+placed between the two regions. A split value of 255 causes the whole screen
+becoming a 200x200 bitmap.
+
+The SPI RAM bitmap:
+
+Serviced entirely from SPI RAM. Interleaved layout encoding the pixels of the
+image in the following manner:
+
+- byte   0, bits 4-7: Pixel   0
+- byte   0, bits 0-3: Pixel   1
+- byte   1, bits 4-7: Pixel   4
+- byte   1, bits 0-3: Pixel   5
+- byte   2, bits 4-7: Pixel   8
+- byte   2, bits 0-3: Pixel   9
+- byte   3, bits 4-7: Pixel  12
+- byte   3, bits 0-3: Pixel  13
+- (...)
+- byte  49, bits 4-7: Pixel 196
+- byte  49, bits 0-3: Pixel 197
+- byte  50, bits 4-7: Pixel   2
+- byte  50, bits 0-3: Pixel   3
+- (...)
+- byte  98, bits 4-7: Pixel 194
+- byte  98, bits 0-3: Pixel 195
+- byte  99, bits 4-7: Pixel 198
+- byte  99, bits 0-3: Pixel 199
+
+Superwide mode bitmap:
+
+- SPI byte   0, bits 4-7: Pixel  32
+- SPI byte   0, bits 0-3: Pixel  33
+- SPI byte   1, bits 4-7: Pixel  36
+- SPI byte   1, bits 0-3: Pixel  37
+- (...)
+- SPI byte  41, bits 4-7: Pixel 196
+- SPI byte  41, bits 0-3: Pixel 197
+- SPI byte  42, bits 4-7: Pixel   2
+- SPI byte  42, bits 0-3: Pixel   3
+- (...)
+- SPI byte  98, bits 4-7: Pixel 226
+- SPI byte  98, bits 0-3: Pixel 227
+- SPI byte  99, bits 4-7: Pixel 230
+- SPI byte  99, bits 0-3: Pixel 231
+
+- RAM byte   0, bits 4-7: Pixel   0
+- RAM byte   0, bits 0-3: Pixel   1
+- RAM byte   1, bits 4-7: Pixel   4
+- RAM byte   1, bits 0-3: Pixel   5
+(...)
+- RAM byte   7, bits 4-7: Pixel  28
+- RAM byte   7, bits 0-3: Pixel  29
+- RAM byte   8, bits 4-7: Pixel 200
+- RAM byte   8, bits 0-3: Pixel 201
+(...)
+- RAM byte  14, bits 4-7: Pixel 224
+- RAM byte  14, bits 0-3: Pixel 225
+- RAM byte  15, bits 4-7: Pixel 228
+- RAM byte  15, bits 0-3: Pixel 229
+
+
+RAM layout:
+
+See fixed layout data in kernel.s.
+
+
+Frame reset:
+
+The video mode works with Frame reset: the display frame cuts off execution
+wherever it was, and after it, execution resumes at a designated entry point.
+
+Video however can be disabled to prevent this happening (for example for the
+duration of loading something from SD card).
+
+Possible workflow:
+
+- Entry happens with video disabled.
+- At a point the user may enable video (and so the cut-off).
+- When everything is done, routine can be terminated.
+
+Termination should possibly happen by a call as then noreturn optimizations
+can be turned on for the routine (FoaD, Mode74). But maybe also support
+simply ending the routine for simplicity.
+
+
+
+
+
+
+U2 Kernel
+
+New kernel concepts
+
+
+RAM / ROM layout:
+
+Assume using pgmspace, along with that, an unified address space.
+
+Linker script, contrary to usual AVR stuff would put .progmem after the
+program code (.text).
+
+Addresses 0x0000 - 0x10FF would then refer to RAM in kernel stuff, then
+addresses 0x1100 - 0xEFFF would refer to ROM. Above that, addresses might
+have special meanings.
+
+This way from the perspective of the kernel, the data address space can be
+unified.
+
+
+Heap allocation support:
+
+The kernel could provide an allocator and a global wipe. This means it would
+be possible to allocate RAM on heap, then when it is no longer needed, do a
+global wipe to start anew. This is useful for games with several distinct
+parts, making it easier to set up memory layouts.

@@ -1,0 +1,41 @@
+Superwide bitmaps
+
+
+These are 232 x 200 bitmaps partially served from SPI RAM, partially from
+RAM, to get a larger size.
+
+In a scanline, 116 pixels come direct from SPI RAM within display, 84 pixels
+are preloaded during the scanline. The remaining 32 pixels are provided from
+RAM.
+
+This takes 3200 RAM bytes which is 100 RAM tiles. The current memory layout
+almost has this (the tiled area's memory usage can be overlaid with this to
+add 13 extra RAM tiles worth of space), only 64 bytes extra is required.
+
+To get this, possibly 87 RAM tiles will be reserved, the user receiving 416
+RAM bytes for linker (plus he can choose to use any RAM tile as well as long
+as managing RAM tile usage proper).
+
+
+Layout should possibly be hidden.
+
+Drawing routines (pixel and transparent blit) should be provided, so text and
+stuff alike can be output on it. Of course this also applies to the normal no
+RAM using 200 px wide SPI RAM bitmaps.
+
+
+Top of SPI RAM may be reserved for kernel staging area for preparing loaded
+bitmaps (24Kbytes possibly).
+
+So from the storage, a normal 200px tall image is loaded into this top region.
+This is then translated to the proper format to the target region.
+
+
+Vertical scrolling support: Possibly load multiple images. For the 232px
+variant the scrolling surface's internal layout is affected by the number of
+images stacked.
+
+(200px: 5 images can be loaded at most, 232px: 4 images)
+
+Support for less than 200px tall images for the 200px wide variant should be
+done (it is not very difficult). The 232px would be a stand-alone mode.

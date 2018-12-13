@@ -1,0 +1,21 @@
+Cross platform noreturn attribute.
+
+
+To support build targets where a normal return path is taken (not by frame
+reset), while the noreturn optimization can be used.
+
+
+The SQ_Halt() function:
+
+Either halts, waiting for video interrupt, or just returns (on normal return
+path arch.)
+
+An SQ_NORETURN definition is provided to apply on functions which lead towards
+an SQ_Halt(). Expands to the attribute where supported, otherwise empty.
+
+
+After an SQ_Halt() or an SQ_NORETURN function, nothing should be done. This
+also ensures tail-chaining on targets without the feature.
+
+
+Doing this way it compiles optimally on both.
