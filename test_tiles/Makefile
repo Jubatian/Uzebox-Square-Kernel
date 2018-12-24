@@ -90,7 +90,7 @@ $(OBJDIR)/tiles_txt.o: tiles_txt.c tiles_txt.h | $(DIRS)
 
 
 ## Link
-$(TARGET): $(OBJECTS) $(DIRS)
+$(TARGET): $(OBJECTS) | $(DIRS)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBDIRS) $(LIBS) -o $(TARGET)
 
 %.hex: $(TARGET)
@@ -105,9 +105,9 @@ $(TARGET): $(OBJECTS) $(DIRS)
 
 ## Create bundle
 $(BNDDIR): $(GAME).uze
-	mkdir $(BNDDIR)
-	cp $(GAME).uze $(BNDDIR)
-	cp resource/*.dat $(BNDDIR)
+	-mkdir -p $(BNDDIR)
+	-cp $(GAME).uze $(BNDDIR)
+	-cp resource/*.dat $(BNDDIR)
 
 
 UNAME := $(shell sh -c 'uname -s 2>/dev/null || echo not')
