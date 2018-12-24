@@ -18,7 +18,7 @@
  *  Uzebox is a reserved trade mark
 */
 
-.section .romdata256
+.section .sq_waveset_sine
 
 .global sq_sinewave
 sq_sinewave:

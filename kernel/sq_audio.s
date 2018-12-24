@@ -157,7 +157,7 @@ sq_proc_channel_60:
 
 	; Reset position if requested so (8 cy)
 
-	sbrc  XH,      4
+	sbrc  XH,      1
 	rjmp  .+6              ; Reset position request
 	rjmp  .
 	rjmp  .
@@ -193,7 +193,7 @@ sq_proc_audio_60:
 	brcs  .+2
 	ldi   r24,     128     ; Ch0 volume max. is 128
 	std   Z + 3,   r24     ; Obtained volume into ch0_curvol
-	andi  XH,      0xEF    ; Clear reset position flag
+	andi  XH,      0xFD    ; Clear reset position flag
 	std   Y + chs_flags, XH
 	adiw  ZL,      6
 	adiw  YL,      16
@@ -203,7 +203,7 @@ sq_proc_audio_60:
 	brcs  .+2
 	ldi   r24,     128     ; Ch1 volume max. is 128
 	std   Z + 3,   r24     ; Obtained volume into ch1_curvol
-	andi  XH,      0xEF    ; Clear reset position flag
+	andi  XH,      0xFD    ; Clear reset position flag
 	std   Y + chs_flags, XH
 	adiw  ZL,      6
 	adiw  YL,      16
@@ -214,7 +214,7 @@ sq_proc_audio_60:
 	ldd   r24,     Z + 3   ; ch2_curvol
 	std   Z + 12,  r24     ; ch2_prvvol
 	std   Z + 3,   r1      ; Obtained volume into ch1_curvol
-	sbrc  XH,      4
+	sbrc  XH,      1
 	rjmp  .+6              ; Reset position request
 	lpm   r24,     Z
 	lpm   r24,     Z
@@ -223,7 +223,7 @@ sq_proc_audio_60:
 	std   Z + 6,   r24     ; Also reset AM position
 	std   Z + 7,   r24
 	std   Z + 9,   r24     ; Clear AM strength, too
-	andi  XH,      0xEF    ; Clear reset position flag
+	andi  XH,      0xFD    ; Clear reset position flag
 	std   Y + chs_flags, XH
 
 	; Process Channel 2 AM (69 cy)

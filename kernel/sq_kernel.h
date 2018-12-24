@@ -46,7 +46,7 @@
 ** Sections for tilesets & waveforms & constants (program mem. stuff)
 */
 #define SQ_SECTION_TILESET __attribute__((section(".romdata256")))
-#define SQ_SECTION_WAVESET __attribute__((section(".romdata256")))
+#define SQ_SECTION_WAVESET __attribute__((section(".sq_waveset")))
 #define SQ_SECTION_CONST   PROGMEM
 
 
@@ -191,5 +191,13 @@ void SQ_MEM_BitmapBlit1Sched(uint8_t xpos, uint8_t ypos, uint8_t width, uint8_t 
 void SQ_MEM_BitmapBlit2Sched(uint8_t xpos, uint8_t ypos, uint8_t width, uint8_t height, uint8_t const* ptr, uint16_t colmap);
 void SQ_XRAM_BitmapCopySched(uint8_t xpos, uint8_t ypos, uint8_t width, uint8_t height, uint8_t srcbank, uint16_t srcoff);
 uint8_t SQ_IsBitmapOpScheduled(void);
+
+void SQ_ChannelCutOff(uint8_t chan);
+void SQ_AudioCutOff(void);
+void SQ_SetPatchSet(void const* psetptr);
+void SQ_SetChannelVolume(uint8_t chan, uint8_t vol);
+void SQ_SetChannelInstrument(uint8_t chan, uint8_t ins);
+void SQ_NoteOn(uint8_t chan, uint8_t note, uint8_t nvol);
+void SQ_NoteOff(uint8_t chan);
 
 #endif

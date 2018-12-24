@@ -170,6 +170,11 @@ SECTIONS
      *(.progmem*)
     /* Aligned data & code */
     . = ALIGN(256);
+    PROVIDE (sq_waveset = .) ;
+    *(.sq_waveset_sine)
+    *(.sq_waveset)
+    *(.sq_waveset*)
+    . = ALIGN(256);
     *(.romdata256)
     . = ALIGN(256);
     *(.romdata256*)

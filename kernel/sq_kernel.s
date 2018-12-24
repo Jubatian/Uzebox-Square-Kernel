@@ -102,6 +102,7 @@
 .set sq_sptile_max,    0x107B  ;   1b, Maximum RAM tile count for sprites
 .set sq_video_shrink,  0x107C  ;   1b, Video vertical shrink pixels (top & bottom)
 .set sq_video_alines,  0x107D  ;   1b, Active tile lines
+.set sq_patchset_ptr,  0x107E  ;   2b, Patch set pointer
 
 .set vm_tmp0,          0x1080  ;   1b, Temporary for Video Mode
 .set vm_col0_ptr,      0x1081  ;   2b, Current Color 0 reload pointer
@@ -145,11 +146,11 @@
 .set chs_pbase_idx,  0 ; Patch (instrument) base index (in patch set)
 .set chs_flags,      1 ; Flags:
                        ; bit0: Active (Note ON) if set. Clearing enters release stage
-                       ; bit1: Available for Effects if set.
+                       ; bit1: Reset position & AM if set (auto-clears).
                        ; bit2: AM note is independent of Note if set.
                        ;       Otherwise depends (relative to it), sweeps too.
                        ; bit3: Tremolo if clear, AM if set.
-                       ; bit4: Reset position & AM if set (auto-clears).
+                       ; bit4-7: Loop counter for loop patch command
 .set chs_pcur_idx,   2 ; Current patch index (0xFF: Channel is silent)
 .set chs_prem_tim,   3 ; Remaining ticks from current patch
 .set chs_evol,       4 ; Envelope volume
@@ -421,10 +422,28 @@ initialize_rzloop:
 	sts   _SFR_MEM_ADDR(TIFR1), ZL
 	sei                    ; Video signal is generated from now (piled up IT reqs. cleaned up first)
 
+	; Other initializations
+
 	ldi   ZH,      hi8(sq_coltab_default)
 	sts   sq_coltab_pth, ZH  ; Start with a reasonable initial sprite color remapping table
 	ldi   ZH,      85
 	sts   sq_sptile_max, ZH  ; Start with 85 RAM tiles allowed for the sprite engine
+
+	; Audio system
+
+	call  SQ_AudioCutOff
+	ldi   r24,     lo8(sq_defpatches)
+	ldi   r25,     hi8(sq_defpatches)
+	call  SQ_SetPatchSet
+	ldi   r24,     0
+	ldi   r22,     128
+	call  SQ_SetChannelVolume
+	ldi   r24,     1
+	ldi   r22,     128
+	call  SQ_SetChannelVolume
+	ldi   r24,     2
+	ldi   r22,     128
+	call  SQ_SetChannelVolume
 
 
 
@@ -959,6 +978,7 @@ SQ_ToggleLed:
 #include "sq_auvid.s"
 #include "sq_steptb.s"
 #include "sq_sine.s"
+#include "sq_aufunc.s"
 
 ;
 ; Video mode (the interrupt part is included into the vector table)

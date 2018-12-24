@@ -373,10 +373,24 @@ sq_sline_30:
 	ldi   ZL,      lo8(sq_mix_buf + 142)
 	sts   sq_mix_buf_wr, ZL
 
-	; !!! Patches will be done here so latency is kept as low as
-	; reasonably possible with this architecture. Not terribly good when
-	; shrinking the screen, but audio should not be left for so long (at
-	; this point typically only interruptible render should be running).
+	; Patches are done here so latency is kept as low as reasonably
+	; possible with this architecture. Not terribly good when shrinking
+	; the screen, but audio should not be left for so long (at this point
+	; typically only interruptible render should be running).
+
+	push  YL
+	push  YH
+	push  r22
+	push  r23
+	push  r24
+	push  r25
+	call  sq_patch_proc
+	pop   r25
+	pop   r24
+	pop   r23
+	pop   r22
+	pop   YH
+	pop   YL
 
 	; Done
 
@@ -1078,3 +1092,4 @@ sq_sline_cread:
 
 #include "sq_mixer.s"
 #include "sq_audio.s"
+#include "sq_patchproc.s"
