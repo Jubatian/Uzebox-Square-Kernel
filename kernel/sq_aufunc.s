@@ -312,15 +312,15 @@ SQ_SweepStart:
 
 
 ;
-; void SQ_SweepEnd(uint8_t chan);
+; void SQ_SweepStop(uint8_t chan);
 ;
 ; Stops a frequency sweep rounding the note to the nearest whole note.
 ;
 ;     r24: Channel to end sweep on (0 - 2)
 ;
-.global SQ_SweepEnd
-.section .text.SQ_SweepEnd
-SQ_SweepEnd:
+.global SQ_SweepStop
+.section .text.SQ_SweepStop
+SQ_SweepStop:
 
 	cpi   r24,     3
 	brcs  .+2

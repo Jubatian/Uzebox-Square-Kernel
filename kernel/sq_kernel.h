@@ -234,7 +234,7 @@ void SQ_SetChannelInstrument(uint8_t chan, uint8_t ins);
 void SQ_NoteOn(uint8_t chan, uint8_t note, uint8_t nvol);
 void SQ_NoteOff(uint8_t chan);
 void SQ_SweepStart(uint8_t chan, int16_t sweep);
-void SQ_SweepEnd(uint8_t chan);
+void SQ_SweepStop(uint8_t chan);
 uint8_t SQ_GetChannelImportance(uint8_t chan);
 
 #endif
