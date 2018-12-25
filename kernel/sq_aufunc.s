@@ -277,3 +277,114 @@ SQ_NoteOff:
 	std   Z + chs_flags, r22
 	ret
 
+
+
+;
+; void SQ_SweepStart(uint8_t chan, int16_t sweep);
+;
+; Starts a frequency sweep. The sweep parameter is a 8.8 fixed point value
+; specifying the sweep in whole notes per 60Hz tick (so the smallest sweep is
+; 1/256th of a note per tick).
+;
+; Note that it can not be applied on instruments (patches) already containing
+; frequency sweeps.
+;
+;     r24: Channel to start sweep on (0 - 2)
+; r23:r22: Sweep amount / tick, 8.8 fixed point 2's complement
+;
+.global SQ_SweepStart
+.section .text.SQ_SweepStart
+SQ_SweepStart:
+
+	cpi   r24,     3
+	brcs  .+2
+	ret
+	swap  r24
+	mov   ZL,      r24
+	ldi   ZH,      0
+	subi  ZL,      lo8(-(sq_ch0_struct))
+	sbci  ZH,      hi8(-(sq_ch0_struct))
+
+	std   Z + chs_note_adjf, r22
+	std   Z + chs_note_adj,  r23
+	ret
+
+
+
+;
+; void SQ_SweepEnd(uint8_t chan);
+;
+; Stops a frequency sweep rounding the note to the nearest whole note.
+;
+;     r24: Channel to end sweep on (0 - 2)
+;
+.global SQ_SweepEnd
+.section .text.SQ_SweepEnd
+SQ_SweepEnd:
+
+	cpi   r24,     3
+	brcs  .+2
+	ret
+	swap  r24
+	mov   ZL,      r24
+	ldi   ZH,      0
+	subi  ZL,      lo8(-(sq_ch0_struct))
+	sbci  ZH,      hi8(-(sq_ch0_struct))
+
+	ldd   r24,     Z + chs_note_frac
+	ldd   r25,     Z + chs_note
+	sbrc  r24,     7
+	inc   r25              ; Round to nearest whole note
+	std   Z + chs_note, r25
+
+	ldi   r24,     0
+	std   Z + chs_note_adjf, r24
+	std   Z + chs_note_adj,  r24
+	std   Z + chs_note_frac, r24
+	ret
+
+
+
+;
+; uint8_t SQ_GetChannelImportance(uint8_t chan);
+;
+; Returns an importance value calculated for the current channel. This can be
+; used for implementing dynamic channel allocation schemes. The higher the
+; return value is, the more important is the playing note on the channel. It
+; roughly tranlates to a peak volume the the note would achieve on the
+; channel.
+;
+;     r24: Channel to query (0 - 2)
+; Returns:
+;     r24: Importance value (volume)
+;
+.global SQ_GetChannelImportance
+.section .text.SQ_GetChannelImportance
+SQ_GetChannelImportance:
+
+	cpi   r24,     3
+	brcs  .+2
+	ret
+	swap  r24
+	mov   ZL,      r24
+	ldi   ZH,      0
+	subi  ZL,      lo8(-(sq_ch0_struct))
+	sbci  ZH,      hi8(-(sq_ch0_struct))
+
+	ldd   r24,     Z + chs_nvol ; By default importance is the note volume
+	ldi   r25,     0
+
+	ldd   r23,     Z + chs_flags
+	sbrs  r23,     0       ; Note ON?
+	rjmp  0f               ; For Note OFF, assume release stage (even if envelope is steady)
+
+	ldd   r23,     Z + chs_evol_adj
+	sbrs  r23,     7
+	ret                    ; Envelope is rising or steady: assume reaching Note Volume
+
+0:
+	ldd   r23,     Z + chs_evol
+	mul   r23,     r24
+	mov   r24,     r1
+	clr   r1
+	ret                    ; Decaying envelope or Release: Return current volume

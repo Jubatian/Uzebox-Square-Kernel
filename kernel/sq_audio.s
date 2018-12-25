@@ -47,42 +47,43 @@ sq_proc_channel_60:
 	ldd   r0,      Y + chs_wave
 	std   Z + 2,   r0      ; IT side, chx_wave
 
-	; Note to step value (48 cy)
+	; Note to step value (49 cy)
 
 	movw  r22,     ZL
 	ldd   ZL,      Y + chs_note
 	andi  ZL,      0x7F
 	mov   r25,     ZL
-	ldi   ZH,      0
 	lsl   ZL
-	rol   ZH               ; ( 8)
+	ldi   ZH,      0       ; ( 7)
 	subi  ZL,      lo8(-(sq_steptb))
 	sbci  ZH,      hi8(-(sq_steptb))
 	lpm   XL,      Z+
 	lpm   XH,      Z+
 	lpm   r0,      Z+
-	lpm   r1,      Z+      ; (22)
-	movw  ZL,      r0
+	lpm   ZH,      Z       ; (21)
 	ldd   r24,     Y + chs_note_frac
-	mul   ZL,      r24
+	mul   r0,      r24
 	mov   ZL,      r1
 	mul   ZH,      r24
-	add   r0,      ZL
-	movw  ZL,      r0
-	neg   r24
-	brne  .+8              ; (35 - branch)
-	rjmp  .
-	rjmp  .
+	ldi   ZH,      0
+	add   ZL,      r0
+	adc   ZH,      r1
+	neg   r24              ; (32)
+	brne  .+8              ; (34 - branch)
+	lpm   r24,     Z
+	lpm   r24,     Z
 	movw  r0,      XL
-	rjmp  .+8              ; (41)
+	rjmp  .+12             ; (42)
 	mul   XL,      r24
 	mov   XL,      r1
 	mul   XH,      r24
-	add   r0,      XL      ; (41)
+	ldi   XH,      0
+	add   r0,      XL
+	adc   r1,      XH      ; (42)
 	add   r0,      ZL
 	adc   r1,      ZH
 	movw  ZL,      r22
-	std   Z + 4,   r0      ; (46) IT side, chx_step
+	std   Z + 4,   r0      ; (47) IT side, chx_step
 	std   Z + 5,   r1
 
 	; Frequency sweep (20 cy)
@@ -177,11 +178,11 @@ sq_proc_channel_60:
 ; Process all 3 channels' 60Hz tasks, updating the interrupt side of the audio
 ; engine. Needs r0, r1, r22 - r25, X, Y, Z and SREG available.
 ;
-; 527 cycles with rcall.
+; 530 cycles with rcall.
 ;
 sq_proc_audio_60:
 
-	; Process common tasks (429 = 30 + 3 * 133 cycles)
+	; Process common tasks (432 = 30 + 3 * 134 cycles)
 
 	ldi   YL,      lo8(sq_ch0_struct)
 	ldi   YH,      hi8(sq_ch0_struct)
@@ -248,41 +249,41 @@ sq_proc_audio_60:
 	lpm   r24,     Z
 	lpm   r24,     Z
 	ldi   r24,     0
-	rjmp  .+16             ; (16)
+	rjmp  .+14             ; (16)
 	ldd   ZL,      Y + chs_note
 	ldd   r24,     Y + chs_note_frac
-	andi  ZH,      0x7F
-	add   ZL,      ZL
+	andi  ZL,      0x7F
+	add   ZL,      ZH
 	brvc  .+2
-	ldi   ZL,      127     ; (14) Positive overflow - saturate
+	ldi   ZL,      127     ; (13) Positive overflow - saturate
 	brpl  .+2
 	ldi   ZL,      0       ; (16) Negative - saturate to 0
-	mov   r25,     ZL
-	ldi   ZH,      0
 	lsl   ZL
-	rol   ZH
+	ldi   ZH,      0
 	subi  ZL,      lo8(-(sq_steptb))
 	sbci  ZH,      hi8(-(sq_steptb))
-	lpm   XL,      Z+      ; (25)
+	lpm   XL,      Z+      ; (23)
 	lpm   XH,      Z+
 	lpm   r0,      Z+
-	lpm   r1,      Z+      ; (34)
-	movw  ZL,      r0
-	mul   ZL,      r24
+	lpm   ZH,      Z       ; (32)
+	mul   r0,      r24
 	mov   ZL,      r1
-	mul   ZH,      r24     ; (40)
-	add   r0,      ZL
-	movw  ZL,      r0
+	mul   ZH,      r24     ; (37)
+	ldi   ZH,      0
+	add   ZL,      r0
+	adc   ZH,      r1
 	neg   r24
-	brne  .+8
-	rjmp  .
-	rjmp  .
+	brne  .+8              ; (43 - branch)
+	lpm   r24,     Z
+	lpm   r24,     Z
 	movw  r0,      XL
-	rjmp  .+8              ; (51)
+	rjmp  .+12             ; (51)
 	mul   XL,      r24
 	mov   XL,      r1
 	mul   XH,      r24
-	add   r0,      XL      ; (51)
+	ldi   XH,      0
+	add   r0,      XL
+	adc   r1,      XH      ; (51)
 	add   r0,      ZL
 	adc   r1,      ZH
 	movw  ZL,      r22

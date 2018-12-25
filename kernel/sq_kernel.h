@@ -90,6 +90,40 @@
 
 
 /*
+** Patch commands for building a patch set
+*/
+#define SQ_PC_ENV_SPEED     0x00U
+#define SQ_PC_WAVE          0x02U
+#define SQ_PC_NOTE_UP       0x03U
+#define SQ_PC_NOTE_DOWN     0x04U
+#define SQ_PC_NOTE_CUT      0x05U
+#define SQ_PC_NOTE_HOLD     0x06U
+#define SQ_PC_ENV_VOL       0x07U
+#define SQ_PC_PITCH         0x08U
+#define SQ_PC_NOTE          0x08U
+#define SQ_PC_TREMOLO_LEVEL 0x09U
+#define SQ_PC_TREMOLO_RATE  0x0AU
+#define SQ_PC_LOOP_START    0x0DU
+#define SQ_PC_LOOP_END      0x0EU
+#define SQ_PC_RELEASE       0x20U
+#define SQ_PC_SWEEP_FRAC    0x21U
+#define SQ_PC_SWEEP_WHOLE   0x22U
+#define SQ_PC_SWEEP         0x23U
+#define SQ_PC_AM_LEVEL      0x24U
+#define SQ_PC_AM_WAVE       0x25U
+#define SQ_PC_AM_PITCH      0x26U
+#define SQ_PC_AM_NOTE       0x26U
+#define SQ_PC_AM_PARAMS     0x27U
+#define SQ_PC_RELJUMP       0x28U
+
+
+/*
+** Soft Note ON flag for SQ_NoteOn (apply on note parameter)
+*/
+#define SQ_NOTEON_SOFT      0x80U
+
+
+/*
 ** The followings are private, must not be accessed directly
 */
 extern void (*volatile sq_frame_func)(void);
@@ -199,5 +233,8 @@ void SQ_SetChannelVolume(uint8_t chan, uint8_t vol);
 void SQ_SetChannelInstrument(uint8_t chan, uint8_t ins);
 void SQ_NoteOn(uint8_t chan, uint8_t note, uint8_t nvol);
 void SQ_NoteOff(uint8_t chan);
+void SQ_SweepStart(uint8_t chan, int16_t sweep);
+void SQ_SweepEnd(uint8_t chan);
+uint8_t SQ_GetChannelImportance(uint8_t chan);
 
 #endif
