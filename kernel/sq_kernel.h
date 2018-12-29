@@ -45,8 +45,8 @@
 /*
 ** Sections for tilesets & waveforms & constants (program mem. stuff)
 */
-#define SQ_SECTION_TILESET __attribute__((section(".romdata256")))
-#define SQ_SECTION_WAVESET __attribute__((section(".sq_waveset")))
+#define SQ_SECTION_TILESET __attribute__((section(".romdata256"), aligned(256)))
+#define SQ_SECTION_WAVESET __attribute__((section(".sq_waveset"), aligned(256)))
 #define SQ_SECTION_CONST   PROGMEM
 
 

@@ -38,7 +38,7 @@
 ; Z: Destination channel structure (preserved)
 ;
 ; Returns volume in r1 which should go in chx_curvol. XH contains the flags on
-; return. 133 cycles (rcall)
+; return. 135 cycles (rcall)
 ;
 sq_proc_channel_60:
 
@@ -124,7 +124,7 @@ sq_proc_channel_60:
 	nop
 	std   Y + chs_evol, r24
 
-	; Tremolo (unless AM) (24 cy)
+	; Tremolo (unless AM) (25 cy)
 
 	ldd   XH,      Y + chs_flags
 	sbrs  XH,      3
@@ -135,16 +135,17 @@ sq_proc_channel_60:
 	lpm   ZL,      Z
 	lpm   ZL,      Z
 	lpm   ZL,      Z
-	nop
-	rjmp  .+20
+	rjmp  .
+	rjmp  .+22
 	ldd   r24,     Y + chs_tr_level
 	ldd   r25,     Y + chs_tr_rate
 	ldd   ZL,      Y + chs_tr_pos
 	ldi   ZH,      hi8(sq_sinewave)
-	lpm   r0,      Z
+	lpm   ZH,      Z
 	add   ZL,      r25
 	std   Y + chs_tr_pos, ZL
-	mul   r0,      r24
+	subi  ZH,      128
+	mul   ZH,      r24
 	com   r1
 	mul   r1,      XL
 	movw  ZL,      r22
@@ -178,11 +179,11 @@ sq_proc_channel_60:
 ; Process all 3 channels' 60Hz tasks, updating the interrupt side of the audio
 ; engine. Needs r0, r1, r22 - r25, X, Y, Z and SREG available.
 ;
-; 530 cycles with rcall.
+; 533 cycles with rcall.
 ;
 sq_proc_audio_60:
 
-	; Process common tasks (432 = 30 + 3 * 134 cycles)
+	; Process common tasks (435 = 30 + 3 * 135 cycles)
 
 	ldi   YL,      lo8(sq_ch0_struct)
 	ldi   YH,      hi8(sq_ch0_struct)

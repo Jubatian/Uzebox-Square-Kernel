@@ -490,7 +490,7 @@ sq_video_leadin:
 
 	; Update mixer
 
-	rcall sq_proc_audio_60 ; (675)
+	rcall sq_proc_audio_60 ; (678)
 
 	; Note: Display ON / OFF difference: When the display is ON, the
 	; stack is discarded (at the end of the frame a specific entry point
@@ -501,7 +501,7 @@ sq_video_leadin:
 	; CPU time belongs to the user, having only sample outputs.
 
 	sbis  _SFR_IO_ADDR(GPIOR0), 0
-	rjmp  vm0_leadin       ; (678) Go on to Video Mode lead-in
+	rjmp  vm0_leadin       ; (681) Go on to Video Mode lead-in
 
 	; If display is OFF, set Display frame flag (so 60Hz timing can be
 	; maintained even then, for example for playing music).

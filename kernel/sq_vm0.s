@@ -36,7 +36,7 @@
 ;
 ; Lead-in code, preparing for video mode display
 ;
-; Enters in cycle 678
+; Enters in cycle 681
 ;
 
 vm0_leadin:
@@ -44,7 +44,7 @@ vm0_leadin:
 	; Discard stack as return will happen to a designated frame routine
 	; (whatever the display frame interrupted is cut off completely).
 	;
-	; 2 cycles; at 678
+	; 2 cycles; at 681
 
 	ldi   ZL,     0xFF
 	out   _SFR_IO_ADDR(SPL), ZL
@@ -52,7 +52,7 @@ vm0_leadin:
 	; Set up COMPB to generate line end interrupts. Superwide mode has it
 	; 72 clocks (2 tiles) later.
 	;
-	; 16 cycles; at 680
+	; 16 cycles; at 683
 
 	ldi   ZL,      lo8(1497)
 	ldi   ZH,      hi8(1497)
@@ -70,13 +70,13 @@ vm0_leadin:
 	; If an SPI RAM operation was halted, then just deselect the chip, so
 	; a new operation can be started.
 	;
-	; 2 cycles; at 696
+	; 2 cycles; at 699
 
 	sbi   _SFR_IO_ADDR(PORTA), PA4 ; Deselect SPI RAM
 
 	; Calculate split regions
 	;
-	; 13 cycles; at 698
+	; 13 cycles; at 701
 
 	lds   r24,     sq_video_split
 	sbic  _SFR_IO_ADDR(GPIOR0), 5
@@ -94,7 +94,7 @@ vm0_leadin:
 	; This allows for using the high 3 bits for other stuff such as tile
 	; importance.
 	;
-	; 453 cycles; at 711
+	; 453 cycles; at 714
 
 	cpi   r24,     0
 	brne  0f
@@ -167,7 +167,7 @@ vm0_leadin:
 	; Load tiled palette (dummy in full screen SPI RAM bitmap modes, no
 	; problem).
 	;
-	; 34 + 2 cycles; at 1164
+	; 34 + 2 cycles; at 1167
 
 	cbi   _SFR_IO_ADDR(PORTA), PA4 ; Select SPI RAM
 
@@ -192,7 +192,7 @@ vm0_leadin:
 
 	; Prepare Color 0 replace
 	;
-	; 8 cycles; at 1200
+	; 8 cycles; at 1203
 
 	lds   r0,      sq_color0_ptr + 0
 	sts   vm_col0_ptr + 0, r0
@@ -201,7 +201,7 @@ vm0_leadin:
 
 	; Prepare some common items
 	;
-	; 3 + 2 cycles; at 1208
+	; 3 + 2 cycles; at 1211
 
 	ldi   r19,     32      ; For tile size in multiplies
 
@@ -267,9 +267,10 @@ vm0_leadin_comm:
 
 	; Wait, then let IT happen to start display
 	;
-	; at 1270
+	; at 1273
 
 	sei                          ; Enter scanline by a COMPB interrupt
+	nop
 	rjmp  .-2                    ; This is aligned right for IT
 
 vm0_leadin_spi:
