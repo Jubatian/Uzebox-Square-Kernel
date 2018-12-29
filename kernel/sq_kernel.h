@@ -175,6 +175,8 @@ static inline void SQ_SetFrameFunc(void (*fptr)(void)){ sq_frame_func = fptr; }
 void SQ_Start(void) SQ_NORETURN;
 void SQ_End(void) SQ_NORETURN;
 void SQ_VideoEnable(void);
+uint8_t SQ_IsFrameSkipped(void);
+void SQ_ClearFrameSkipped(void);
 
 uint8_t SQ_LoadData(sdc_struct_t* sds, uint8_t xrambank, uint16_t xramoff, uint8_t sectors);
 uint8_t SQ_SaveData(sdc_struct_t* sds, uint8_t xrambank, uint16_t xramoff, uint8_t sectors);

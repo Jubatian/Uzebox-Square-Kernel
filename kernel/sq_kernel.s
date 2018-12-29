@@ -658,6 +658,40 @@ SQ_VideoEnable:
 
 
 ;
+; Checks whether a frame was skipped. Can be used to keep 60Hz sync even when
+; frameskips happen.
+;
+; uint8_t SQ_IsFrameSkipped(void);
+;
+; Returns:
+;     r24: 1 if a frame was skipped.
+;
+.global SQ_IsFrameSkipped
+.section .text.SQ_IsFrameSkipped
+SQ_IsFrameSkipped:
+
+	ldi   r24,     0
+	sbic  _SFR_IO_ADDR(GPIOR0), 1 ; Display frame happened (and skipped)?
+	ldi   r24,     1
+	ret
+
+
+
+;
+; Clears frame skipped flag so it may collect a subsequent frameskip.
+;
+; void SQ_ClearFrameSkipped(void);
+;
+.global SQ_ClearFrameSkipped
+.section .text.SQ_ClearFrameSkipped
+SQ_ClearFrameSkipped:
+
+	cbi   _SFR_IO_ADDR(GPIOR0), 1 ; Clear the display frame skipped flag
+	ret
+
+
+
+;
 ; Load data from SD card into XRAM. A length of 0 loads 128K.
 ;
 ; uint8_t SQ_LoadData(sdc_struct_t* sds, uint8_t xrambank, uint16_t xramoff, uint8_t sectors);
