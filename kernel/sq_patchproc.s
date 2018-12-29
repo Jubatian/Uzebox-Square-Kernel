@@ -423,6 +423,7 @@ pt25:
 	ldd   r22,     Y + chs_flags
 	ori   r22,     0x08    ; In AM mode
 	std   Y + chs_flags, r22
+	subi  r23,     hi8(-(sq_waveset))
 	std   Y + chs_am_wave, r23
 	rjmp  3f
 
@@ -444,7 +445,7 @@ pt27:
 	ori   r22,     0x0C    ; In AM mode & AM note independent
 	sbrs  r23,     0
 	andi  r22,     0xFB    ; AM note is relative to Note
-	std   Y + chs_flags, r23
+	std   Y + chs_flags, r22
 	rjmp  3f
 
 pt28:

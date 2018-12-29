@@ -250,7 +250,7 @@ sq_proc_audio_60:
 	lpm   r24,     Z
 	lpm   r24,     Z
 	ldi   r24,     0
-	rjmp  .+14             ; (16)
+	rjmp  .+16             ; (16)
 	ldd   ZL,      Y + chs_note
 	ldd   r24,     Y + chs_note_frac
 	andi  ZL,      0x7F
