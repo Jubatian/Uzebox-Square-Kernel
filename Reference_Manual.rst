@@ -80,7 +80,7 @@ the callback mechanism this kernel employs also ensures proper timing.
 
 
 
-Basic conventions
+Basic conventions, features and tasks
 ------------------------------------------------------------------------------
 
 
@@ -91,11 +91,11 @@ Kernel components
 The kernel is made up of three components which have different prefixes as
 follows:
 
-- SQ_: The Square Kernel itself
-- FS_: The Filesystem support
-- XRAM_: The SPI RAM
+- SQ: The Square Kernel itself
+- FS: The Filesystem support
+- XRAM: The SPI RAM
 
-The Filesystem support also has some low-level soutines prefixed SPI_ and SDC_
+The Filesystem support also has some low-level soutines prefixed SPI and SDC
 which shouldn't be accessed when using this kernel. They are left there as the
 component is the Bootloader Library within the original Uzebox kernel.
 
@@ -122,6 +122,63 @@ with such constant data.
 Note: "MEM" functions are also ideal in case you had no means to know whether
 the particular pointer you wanted to dereference pointed to such constant
 data.
+
+
+
+Available RAM and getting more RAM
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are 416 bytes of RAM (on the ATmega) available for user data, which can
+be occupied by C variables and structures. This limit is enforced by the
+linker script, so if you exceed it, you will face a compilation error.
+
+It is however possible to have access to more RAM if you needed it by
+utilizing areas normally reserved for the video display, which could be
+particularly useful when loading and preparing data.
+
+The function: ::
+
+    void* SQ_GetBlitterTilePtr(uint8_t tno);
+
+This gives you a pointer to the beginning of the data area of a "blitter
+tile", a 32 byte block normally representing a work tile for the sprite
+blitter. There are 100 such tile positions (0 - 99) laid out in a contiguous
+manner.
+
+Availability:
+
+- Display OFF: All of it is free to use (up to 3200 bytes). Display OFF here
+  means that you would reinitialize the display before returning from the
+  video frame callback.
+
+- Sprites & Tiles mode: By default blitter tiles 0-1 are free to use. By
+  reducing the count of tiles the sprite blitter can use (85 by default), you
+  can free up more. See SQ_SetMaxSpriteTiles().
+
+- 200 pixels wide bitmap: All of it is free to use (up to 3200 bytes). This is
+  what allows split-screen between this mode and the Sprites & Tiles mode.
+
+- 232 pixels wide bitmap: Fully used.
+
+
+
+The stack
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are 126 bytes of stack available for the user program, a bit limited,
+but should be okay for normal use-cases.
+
+The kernel implements a stack guard feature which is capable to detect when
+this stack is overran. This case it will halt the game with the following
+results:
+
+- Screen turns blank.
+
+- The User LED blinks at 30Hz rate (might be difficult to see, this rate was
+  available without needing any storage for a counter to get a divider).
+
+- Ports 0x39 and 0x3A get the values 0xDE and 0xAD. These ports are unused on
+  the ATmega, emulators display their contents for debugging.
 
 
 

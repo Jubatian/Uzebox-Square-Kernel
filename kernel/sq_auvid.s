@@ -483,9 +483,30 @@ sq_video_leadin:
 	st    Z,       r24
 	st    Z,       r25     ; (96)
 
+	; Check stack guards, if they are still there at this point, the game
+	; did all OK regarding stack usage.
+
+	lds   ZL,      sq_stackend + 0
+	cpi   ZL,      0x8A    ; Stack guard 0 match?
+	brne  0f
+	lds   ZL,      sq_stackend + 1
+	cpi   ZL,      0x17    ; Stack guard 1 match?
+	breq  1f
+
+	; Stack guard killed off, die by stack overrun
+2:
+	ldi   ZL,      lo8(pm(sq_stackdead))
+	sts   sq_frame_func + 0, ZL
+	ldi   ZL,      hi8(pm(sq_stackdead))
+	sts   sq_frame_func + 1, ZL
+	rjmp  sq_video_exit    ; Breaks sync, but stuff is already broken anyway.
+0:
+	nop
+	rjmp  2b
+1:
 	; Wait for sync low end
 
-	WAIT  ZL,      47      ; (143)
+	WAIT  ZL,      38      ; (143)
 	sbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; (145)
 
 	; Update mixer
@@ -530,6 +551,10 @@ sq_video_exit:
 
 	ldi   ZL,      0xFF    ; Empty stack
 	out   _SFR_IO_ADDR(SPL), ZL
+	ldi   ZL,      0x8A    ; Set up stack guard, 0
+	sts   sq_stackend + 0, ZL
+	ldi   ZL,      0x17    ; Set up stack guard, 1
+	sts   sq_stackend + 1, ZL
 	clr   r1               ; r1 zero for C
 	sbi   _SFR_IO_ADDR(GPIOR0), 0 ; Disable display
 	cbi   _SFR_IO_ADDR(GPIOR0), 1 ; Clear display frame flag
@@ -1052,6 +1077,24 @@ sq_sline_261b:
 
 	sbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; (77)
 	reti
+
+
+
+;
+; Dead by stack overrun frame function.
+;
+
+sq_stackdead:
+
+	ldi   ZL,      0xDE
+	sts   0x0039,  ZL
+	ldi   ZL,      0xAD
+	sts   0x003A,  ZL      ; Something to show in the emulator (0xDEAD)
+	sbis  _SFR_IO_ADDR(GPIOR0), 1
+	rjmp  .-4              ; Wait until frame skipped
+	cbi   _SFR_IO_ADDR(GPIOR0), 1
+	sbi   _SFR_IO_ADDR(PIND), PD4 ; Toggle User LED (30Hz)
+	rjmp  .-10
 
 
 

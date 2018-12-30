@@ -104,6 +104,8 @@
 .set sq_video_alines,  0x107D  ;   1b, Active tile lines
 .set sq_patchset_ptr,  0x107E  ;   2b, Patch set pointer
 
+.set sq_stackend,      0x1080  ;    -, User stack end
+
 .set vm_tmp0,          0x1080  ;   1b, Temporary for Video Mode
 .set vm_col0_ptr,      0x1081  ;   2b, Current Color 0 reload pointer
 .set sq_video_lbuf,    0x1083  ; 104b, Video line buffer
@@ -417,6 +419,10 @@ initialize_rzloop:
 	sts   sq_mix_buf_rd, ZL  ; Read & Write positions also set up accordingly
 	ldi   ZL,      lo8(sq_mix_buf + 142)
 	sts   sq_mix_buf_wr, ZL
+	ldi   ZL,      0x8A    ; Set up stack guard, 0
+	sts   sq_stackend + 0, ZL
+	ldi   ZL,      0x17    ; Set up stack guard, 1
+	sts   sq_stackend + 1, ZL
 
 	ldi   ZL,      (1 << OCF1A)
 	sts   _SFR_MEM_ADDR(TIFR1), ZL
