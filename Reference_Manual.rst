@@ -151,12 +151,12 @@ Availability:
   means that you would reinitialize the display before returning from the
   video frame callback.
 
-- Sprites & Tiles mode: By default blitter tiles 0-1 are free to use. By
+- Tiles & Sprites mode: By default blitter tiles 0-1 are free to use. By
   reducing the count of tiles the sprite blitter can use (85 by default), you
   can free up more. See SQ_SetMaxSpriteTiles().
 
 - 200 pixels wide bitmap: All of it is free to use (up to 3200 bytes). This is
-  what allows split-screen between this mode and the Sprites & Tiles mode.
+  what allows split-screen between this mode and the Tiles & Sprites mode.
 
 - 232 pixels wide bitmap: Fully used.
 
@@ -192,16 +192,24 @@ The following functions control the core operation of the kernel.
 
 
 
-void SQ_ClearFrameSkipped(void);
+SQ_ClearFrameSkipped
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_ClearFrameSkipped(void);
 
 Clears the Video frame was skipped flag. Use it to make it ready to catch a
 subsequent skip.
 
 
 
-uint8_t SQ_IsFrameSkipped(void);
+SQ_IsFrameSkipped
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    uint8_t SQ_IsFrameSkipped(void);
 
 Checks whether a Video frame was skipped since the start of the Video frame
 callback or the last clearing of the flag.
@@ -212,8 +220,12 @@ running while you were attempting to load data off from the filesystem.
 
 
 
-void SQ_Reset(void);
+SQ_Reset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_Reset(void);
 
 Executes a Soft Reset. This depending on the configuration of the Game
 Selector (bootloader) may result in either landing back in the Game Selector
@@ -221,8 +233,12 @@ or restarting the game.
 
 
 
-void SQ_SetFrameFunc(void (*fptr)(void));
+SQ_SetFrameFunc
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetFrameFunc(void (*fptr)(void));
 
 Sets up the video frame callback. You must do this before SQ_Start(), later
 you may change the video frame callback any time you wish.
@@ -233,15 +249,23 @@ function takes no parameters (void) and returns void.
 
 
 
-void SQ_Start(void);
+SQ_Start
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_Start(void);
 
 Call this at the end of main() to start up the kernel.
 
 
 
-void SQ_VideoEnable(void);
+SQ_VideoEnable
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_VideoEnable(void);
 
 Enables cutting off by the next Video frame.
 
@@ -268,5 +292,231 @@ were drawing).
 
 
 
-Video - general functions
+Video - general concepts
 ------------------------------------------------------------------------------
+
+
+The Square Kernel provides two screen setups as follows:
+
+- A 200x200 surface arbitrarily split between a Tiles & Sprites region on the
+  top and a Bitmap region on the bottom (either may be absent).
+
+- A 232x200 Bitmap mode.
+
+Each of these modes have square pixels, and use 4 bits per pixel color depth.
+Bitmap mode and Tiled mode has its own 16 color palette, and optionally it is
+also possible to provide a new Color 0 on each scanline using an array.
+
+The screen in 200x200 mode: ::
+
+       |<------------- 200 pixels ------------->|
+       |                                        |
+    ---+----------------------------------------+
+    A  | Blank                                  | ScreenShrink (0 - 99)
+    |  +----------------------------------------+
+    |  |                                        |
+       | Tiles & Sprites region                 |
+    2  |                                        |
+    0  |                                        |
+    0  |                                        |
+       |                                        |
+    l  |                                        |
+    i  |                                        |
+    n  +----------------------------------------+ ScreenSplit (0 - 200)
+    e  |                                        |
+    s  | Bitmap (200px wide) region             |
+       |                                        |
+    |  |                                        |
+    |  +----------------------------------------+
+    V  | Blank                                  | ScreenShrink (0 - 99)
+    ---+----------------------------------------+
+
+In 232x200 Bitmap mode the layout is similar except for that there is no split
+point: the whole screen is Bitmap like if ScreenSplit was set zero.
+
+
+
+SQ_SetScreenShrink
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetScreenShrink(uint8_t shrink);
+
+Sets the amount of pixels to shrink the screen by. This many pixels are then
+taken away from both the top and the bottom of the visible area.
+
+By default this shrink amount is zero, so actual display is 200 lines tall.
+
+Using screen shrinking creates more Vertical Blanking time in which the video
+frame function (containing the game code) is allowed to run, so in some cases
+it may be an useful trade-off to settle for a shorter screen to allow more
+graphics rendering.
+
+
+
+SQ_SetScreenSplit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetScreenSplit(uint8_t split);
+
+Sets the split point between the Tiles & Sprites region and the Bitmap region.
+
+By default this is zero, so the whole screen would be Bitmap. Setting it to
+200 or anything above makes the Tiles & Sprites region occupying the whole
+screen.
+
+If the screen is in 232x200 Bitmap mode when calling this, it leaves 232x200
+Bitmap mode.
+
+
+
+SQ_SetWideBitmap
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetWideBitmap(void);
+
+Sets 232x200 Bitmap mode.
+
+
+
+
+
+Video - colors and palette manipulation
+------------------------------------------------------------------------------
+
+
+One pixel is encoded in 4 bits, so its possible values may be represented by
+the numbers 0 - 15. To map these numbers to visible colors, palettes are used,
+defining which Uzebox color should be shown for each of the 16 pixel values.
+
+Two distinct palettes are used:
+
+- Tiles & Sprites region palette.
+
+- Bitmap region palette.
+
+So when using a split screen layout, you can define different color sets for
+these two regions.
+
+Also there is support for setting the color for pixel value 0 on each line by
+an array, this feature is called Color 0 Reloading. Note that the color at
+position 0 in the palette is not replaced when using it, Color 0 Reloading
+only overrides it.
+
+
+
+SQ_MEM_SetBitmapPal8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_SetBitmapPal8(uint8_t const* ptr);
+
+Sets Bitmap palette (both for 200px and 232px wide bitmaps) from internal
+memory (RAM or Flash) source. The source must be 16 bytes long containing 16
+colors, one for each pixel value.
+
+
+
+SQ_MEM_SetTiledPal8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_SetTiledPal8(uint8_t const* ptr);
+
+Sets Tiles & Sprites region palette from internal memory (RAM or Flash)
+source. The source must be 16 bytes long containing 16 colors, one for each
+pixel value.
+
+
+
+SQ_SetBitmapC0Reload
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetBitmapC0Reload(uint8_t ena);
+
+Sets whether Color 0 Reloading should be used in Bitmap region (applies both
+for 200px and 232px wide bitmaps). Nonzero for the "ena" parameter turns the
+feature on.
+
+
+
+SQ_SetC0Location
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetC0Location(uint8_t const* ramptr);
+
+Sets the address of the Color 0 Reload table. This array must be in RAM, and
+normally should take 200 bytes to specify a new color for each line. A smaller
+array might be used if the actual region where Color 0 Reloading is enabled is
+shorter (such as by shrinking the screen or only applying it on the Tiles &
+Sprites region of a split-screen setup).
+
+
+
+SQ_SetTiledC0Reload
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTiledC0Reload(uint8_t ena);
+
+Sets whether Color 0 Reloading should be used in Tiles & Sprites region.
+Nonzero for the "ena" parameter turns the feature on.
+
+
+
+SQ_SetBitmapColor8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetBitmapColor8(uint8_t idx, uint8_t val);
+
+Sets a single color in the Bitmap (200px or 232px wide) palette.
+
+
+
+SQ_SetTiledColor8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTiledColor8(uint8_t idx, uint8_t val);
+
+Sets a single color in the Tiles & Sprites region palette.
+
+
+
+SQ_XRAM_SetBitmapPal8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_XRAM_SetBitmapPal8(uint8_t srcbank, uint16_t srcoff);
+
+Sets Bitmap palette (both for 200px and 232px wide bitmaps) from external
+memory (SPI RAM) source. The source must be 16 bytes long containing 16
+colors, one for each pixel value.
+
+
+
+SQ_XRAM_SetTiledPal8
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_XRAM_SetTiledPal8(uint8_t srcbank, uint16_t srcoff);
+
+Sets Tiles & Sprites region palette from external memory (SPI RAM) source. The
+source must be 16 bytes long containing 16 colors, one for each pixel value.
