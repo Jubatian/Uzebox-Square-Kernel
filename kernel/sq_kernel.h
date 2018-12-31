@@ -216,8 +216,9 @@ void SQ_SetBitmapC0Reload(uint8_t ena);
 void SQ_SetTiledC0Reload(uint8_t ena);
 static inline void SQ_SetC0Location(uint8_t const* ramptr){ sq_color0_ptr = ramptr; }
 
-void SQ_PrepBitmap(uint8_t dstbank, uint16_t dstoff, uint8_t srcbank, uint16_t srcoff, uint16_t rowcnt, void* workram);
-void SQ_PrepWideBitmap(uint8_t dstbank, uint16_t dstoff, uint8_t srcbank, uint16_t srcoff);
+void SQ_PrepBitmap(uint8_t srcbank, uint16_t srcoff, uint16_t rowcnt, void* workram);
+void SQ_PrepBitmapTo(uint8_t dstbank, uint16_t dstoff, uint8_t srcbank, uint16_t srcoff, uint16_t rowcnt, void* workram);
+void SQ_PrepWideBitmap(uint8_t srcbank, uint16_t srcoff);
 
 void SQ_MEM_BitmapBlit1(uint8_t xpos, uint8_t ypos, uint8_t width, uint8_t height, uint8_t const* ptr, uint16_t colmap);
 void SQ_MEM_BitmapBlit2(uint8_t xpos, uint8_t ypos, uint8_t width, uint8_t height, uint8_t const* ptr, uint16_t colmap);

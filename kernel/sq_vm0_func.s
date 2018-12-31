@@ -366,12 +366,50 @@ SQ_SetTiledC0Reload:
 
 
 ;
+; Prepares 200px wide bitmap to the current surface. Just forwards to
+; SQ_PrepBitmapTo appropriately.
+;
+; void SQ_PrepBitmap(uint8_t srcbank, uint16_t srcoff,
+;                    uint16_t rowcnt, void* workram);
+;
+;     r24: Source bank
+; r23:r22: Source offset
+; r21:r20: Row count
+; r19:r18: Work RAM pointer
+;
+.global SQ_PrepBitmap
+.section .text.SQ_PrepBitmap
+SQ_PrepBitmap:
+
+	push  r17
+	push  r16
+	push  r15
+	push  r14
+
+	movw  r14,     r18
+	movw  r16,     r20
+	movw  r18,     r22
+	mov   r20,     r24
+	lds   r22,     sq_bitmap_ptr + 0
+	lds   r23,     sq_bitmap_ptr + 1
+	lds   r24,     sq_bitmap_bank
+	call  SQ_PrepBitmapTo
+
+	pop   r14
+	pop   r15
+	pop   r16
+	pop   r17
+	ret
+
+
+
+;
 ; Rearranges a straight bitmap (high nybble corresponding to left pixels) to
 ; the normal SPI bitmap format. This operation requires 100 bytes of work RAM.
 ;
-; void SQ_PrepBitmap(uint8_t dstbank, uint16_t dstoff,
-;                    uint8_t srcbank, uint16_t srcoff,
-;                    uint16_t rowcnt, void* workram);
+; void SQ_PrepBitmapTo(uint8_t dstbank, uint16_t dstoff,
+;                      uint8_t srcbank, uint16_t srcoff,
+;                      uint16_t rowcnt, void* workram);
 ;
 ;     r24: Destination bank
 ; r23:r22: Destination offset
@@ -380,9 +418,9 @@ SQ_SetTiledC0Reload:
 ; r17:r16: Row count
 ; r15:r14: Work RAM pointer
 ;
-.global SQ_PrepBitmap
-.section .text.SQ_PrepBitmap
-SQ_PrepBitmap:
+.global SQ_PrepBitmapTo
+.section .text.SQ_PrepBitmapTo
+SQ_PrepBitmapTo:
 
 	push  r17
 	push  r16
@@ -465,13 +503,10 @@ SQ_PrepBitmap:
 ; Rearranges a straight bitmap (high nybble corresponding to left pixels) to
 ; the wide SPI bitmap format, 200 rows fixed.
 ;
-; void SQ_PrepWideBitmap(uint8_t dstbank, uint16_t dstoff,
-;                        uint8_t srcbank, uint16_t srcoff);
+; void SQ_PrepWideBitmap(uint8_t srcbank, uint16_t srcoff);
 ;
-;     r24: Destination bank
-; r23:r22: Destination offset
-;     r20: Source bank
-; r19:r18: Source offset
+;     r24: Source bank
+; r23:r22: Source offset
 ;
 .global SQ_PrepWideBitmap
 .section .text.SQ_PrepWideBitmap
@@ -488,10 +523,11 @@ SQ_PrepWideBitmap:
 	push  YH
 	push  YL
 
-	mov   r8,      r24     ; r8: Dst. bank
-	mov   r9,      r20     ; r9: Src. bank
-	movw  r10,     r22     ; r10: Dst. offset
-	movw  r12,     r18     ; r12: Src. offset
+	lds   r8,      sq_bitmap_bank    ; r8: Dst. bank
+	lds   r10,     sq_bitmap_ptr + 0 ; r11:r10: Dst. offset
+	lds   r11,     sq_bitmap_ptr + 1
+	mov   r9,      r24     ; r9: Src. bank
+	movw  r12,     r22     ; r13:r12: Src. offset
 
 	; SPI RAM based portion
 

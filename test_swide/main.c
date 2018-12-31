@@ -65,7 +65,7 @@ int main(void)
  if (cluster != 0U){
   FS_Select_Cluster(SQ_GetFSStruct(), cluster);
   SQ_LoadData(SQ_GetFSStruct(), 1U, 0U, 64U);
-  SQ_PrepWideBitmap(0U, 0U, 1U, 2U + 2U + 16U);
+  SQ_PrepWideBitmap(1U, 2U + 2U + 16U);
   SQ_XRAM_SetBitmapPal8(1U, 2U + 2U);
  }
 
