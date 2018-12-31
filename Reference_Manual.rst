@@ -520,3 +520,283 @@ Declaration: ::
 
 Sets Tiles & Sprites region palette from external memory (SPI RAM) source. The
 source must be 16 bytes long containing 16 colors, one for each pixel value.
+
+
+
+
+
+Video - Bitmap mode
+------------------------------------------------------------------------------
+
+
+The Bitmap modes work with bitmap data: rectangular images in the external
+memory (SPI RAM) defining every 4 bit pixel.
+
+Images are stored horizontal left to right, then vertical top to bottom order,
+high nybbles of bytes corresponding to the leftmost pixels. For example a 8x8
+pixel image of a letter 'P' could look like this: ::
+
+    uint8_t const img_letter_p[32] SECTION_CONST = {
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x00
+    };
+
+Note that the Tiles & Sprites mode's tile and sprite images also use this
+layout for their fixed 8x8 pixels size tiles.
+
+Keep in mind that this format is that of the image sources which the bitmap
+mode functions can take. The actual surface has a different layout, specific
+to the way the hardware has to be worked with to make displaying these images
+possible. So you absolutely shouldn't read and write the actual surface
+directly.
+
+The 200 pixels wide format takes 100 external memory bytes for each line, it
+is possible to vertically scroll it if desired by advancing the Bitmap
+Location by 100 bytes per line on an appropriately prepared tall bitmap.
+
+The 232 pixels wide format is fixed at its 232x200 pixels size due to its
+special layout interleaving RAM data to achieve this greater width. It is not
+possible to scroll it.
+
+There are functions provided for blitting 1bpp and 2bpp transparent images
+onto the bitmap surface (pixel value 0 being transparent). They can be useful
+for example to generate text. The layout of the data is demonstrated with the
+letter 'P' from above: ::
+
+    uint8_t const img_letter_p_1bpp[8] SECTION_CONST = {
+     0xFC,
+     0xC6,
+     0xC6,
+     0xFC,
+     0xC0,
+     0xC0,
+     0xC0,
+     0x00
+    };
+    uint8_t const img_letter_p_2bpp[16] SECTION_CONST = {
+     0x55, 0x50,
+     0x50, 0x14,
+     0x50, 0x14,
+     0x55, 0x50,
+     0x50, 0x00,
+     0x50, 0x00,
+     0x50, 0x00,
+     0x00, 0x00
+    };
+
+
+
+SQ_SetBitmapLocation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetBitmapLocation(uint8_t xrambank, uint16_t xramoff);
+
+Sets the external memory (SPI RAM) location where the bitmap surface should
+be placed. By default it is at offset zero in bank zero.
+
+The bitmap surface for 200 pixels height takes 20000 external memory bytes
+regardless of the mode. In 232 pixels wide mode, RAM is used to provide
+additional width.
+
+In 200 pixels wide mode you may use this function for vertical scrolling or
+relocating the surface to other prepared image data.
+
+
+
+SQ_PrepBitmap
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_PrepBitmap(uint8_t srcbank, uint16_t srcoff,
+                       uint16_t rowcnt, void* workram);
+
+Prepares a 200 pixels wide bitmap from the provided 200 pixels wide source.
+The row count is arbitrary. The work RAM must be pointed to a 100 byte RAM
+buffer which will be used for the conversion.
+
+Note that you must not use this function if you want to set up a 232 pixels
+wide bitmap, use SQ_PrepWideBitmap() then.
+
+
+
+SQ_PrepBitmapTo
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_PrepBitmapTo(uint8_t dstbank, uint16_t dstoff,
+                         uint8_t srcbank, uint16_t srcoff,
+                         uint16_t rowcnt, void* workram);
+
+Prepares a 200 pixels wide bitmap to a specified target area. You may use this
+if you want to prepare multiple distinct images between which you would like
+to change later, otherwise see SQ_PrepBitmap().
+
+
+
+SQ_PrepWideBitmap
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_PrepWideBitmap(uint8_t srcbank, uint16_t srcoff);
+
+Prepares a 232 pixels wide bitmap from the provided 232 pixels wide source.
+The height is always 200 pixels.
+
+Note that you must not use this function if you want to set up a 200 pixels
+wide bitmap, use SQ_PrepBitmap() then.
+
+
+
+SQ_MEM_BitmapBlit1
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_BitmapBlit1(uint8_t xpos, uint8_t ypos,
+                            uint8_t width, uint8_t height,
+                            uint8_t const* ptr, uint16_t colmap);
+
+Transparent blits a 1bpp bitmap onto the displaying bitmap (200 or 232 pixels
+wide). The source may be in RAM or in the ATmega's Flash.
+
+The colmap parameter specifies color mapping as follows:
+
+- bits  0- 3: Unused ('0' pixels are transparent)
+- bits  4- 7: 4bpp color value for '1' pixels.
+- bits  8-15: Unused
+
+Width can be arbitrary, in the source it is rounded up to the next multiple of
+8 to maintain proper byte boundaries.
+
+Clipping is done to the displaying bitmap's width and 200 pixels height.
+
+
+
+SQ_MEM_BitmapBlit2
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_BitmapBlit2(uint8_t xpos, uint8_t ypos,
+                            uint8_t width, uint8_t height,
+                            uint8_t const* ptr, uint16_t colmap);
+
+Transparent blits a 2bpp bitmap onto the displaying bitmap (200 or 232 pixels
+wide). The source may be in RAM or in the ATmega's Flash.
+
+The colmap parameter specifies color mapping as follows:
+
+- bits  0- 3: Unused ('0' pixels are transparent)
+- bits  4- 7: 4bpp color value for '1' pixels.
+- bits  8-11: 4bpp color value for '2' pixels.
+- bits 12-15: 4bpp color value for '3' pixels.
+
+Width can be arbitrary, in the source it is rounded up to the next multiple of
+4 to maintain proper byte boundaries.
+
+Clipping is done to the displaying bitmap's width and 200 pixels height.
+
+
+
+SQ_XRAM_BitmapCopy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_XRAM_BitmapCopy(uint8_t xpos, uint8_t ypos,
+                            uint8_t width, uint8_t height,
+                            uint8_t srcbank, uint16_t srcoff);
+
+Block copies a 4bpp bitmap in the external memory (SPI RAM) onto the
+displaying bitmap. No transparency, the X position and width is limited to
+multiples of 8.
+
+Clipping is done to the displaying bitmap's width and 200 pixels height.
+
+
+
+
+
+Video - Bitmap mode scheduled operations
+------------------------------------------------------------------------------
+
+
+The scheduled bitmap operations allow for using spare vertical blanking time
+to perform low priority bitmap operations.
+
+Spare vertical blanking time occurs when the video frame routine (with the
+game logic code) finishes before the next frame is required to start.
+
+This feature is useful for example for implementing status displays on a strip
+of bitmap mode for a Tiles & Sprites mode game, so the status keeps updating
+without adversely affecting game performance.
+
+Also it can carry out larger updates than possible in one frame by the direct
+functions, which may make this useful for building the mechanics of title
+screens and simple cutscenes.
+
+When calling a scheduled operation, it won't start, rather only gets scheduled
+for completion in spare vertical blanking time. The first time you may see it
+completed is the next frame.
+
+
+
+SQ_IsBitmapOpScheduled
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    uint8_t SQ_IsBitmapOpScheduled(void);
+
+Checks whether there is a bitmap operation scheduled to complete in spare
+vertical blanking time still in progress.
+
+
+
+SQ_MEM_BitmapBlit1Sched
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_BitmapBlit1Sched(uint8_t xpos, uint8_t ypos,
+                                 uint8_t width, uint8_t height,
+                                 uint8_t const* ptr, uint16_t colmap);
+
+Scheduled variant of SQ_MEM_BitmapBlit1().
+
+
+
+SQ_MEM_BitmapBlit2Sched
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MEM_BitmapBlit2Sched(uint8_t xpos, uint8_t ypos,
+                                 uint8_t width, uint8_t height,
+                                 uint8_t const* ptr, uint16_t colmap);
+
+Scheduled variant of SQ_MEM_BitmapBlit2().
+
+
+
+SQ_XRAM_BitmapCopySched
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_XRAM_BitmapCopySched(uint8_t xpos, uint8_t ypos,
+                                 uint8_t width, uint8_t height,
+                                 uint8_t srcbank, uint16_t srcoff);
+
+Scheduled variant of SQ_XRAM_BitmapCopy().
