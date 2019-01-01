@@ -536,7 +536,7 @@ Images are stored horizontal left to right, then vertical top to bottom order,
 high nybbles of bytes corresponding to the leftmost pixels. For example a 8x8
 pixel image of a letter 'P' could look like this: ::
 
-    uint8_t const img_letter_p[32] SECTION_CONST = {
+    uint8_t const img_letter_p[32] SQ_SECTION_CONST = {
      0x11, 0x11, 0x11, 0x00,
      0x11, 0x00, 0x01, 0x10,
      0x11, 0x00, 0x01, 0x10,
@@ -569,7 +569,7 @@ onto the bitmap surface (pixel value 0 being transparent). They can be useful
 for example to generate text. The layout of the data is demonstrated with the
 letter 'P' from above: ::
 
-    uint8_t const img_letter_p_1bpp[8] SECTION_CONST = {
+    uint8_t const img_letter_p_1bpp[8] SQ_SECTION_CONST = {
      0xFC,
      0xC6,
      0xC6,
@@ -579,7 +579,7 @@ letter 'P' from above: ::
      0xC0,
      0x00
     };
-    uint8_t const img_letter_p_2bpp[16] SECTION_CONST = {
+    uint8_t const img_letter_p_2bpp[16] SQ_SECTION_CONST = {
      0x55, 0x50,
      0x50, 0x14,
      0x50, 0x14,
@@ -800,3 +800,493 @@ Declaration: ::
                                  uint8_t srcbank, uint16_t srcoff);
 
 Scheduled variant of SQ_XRAM_BitmapCopy().
+
+
+
+
+
+Video - Tiles & Sprites mode
+------------------------------------------------------------------------------
+
+
+The Tiles & Sprites mode provides you with a free-scrolling background
+composed of up to 256 8x8 pixel tiles over which you can draw sprites to
+realize game action.
+
+There are 26 tile rows in this mode to be able to cover the up to 200 pixels
+tall display, each individual row capable of receiving a tile map start
+location in external memory (SPI RAM) and an X shift for fine X scroll. A
+global equivalent Y shift is provided for fine Y scrolling. ::
+
+      X shift 0 - 7 pixels
+          |
+          V
+      |<----->|<---- Visible display (200 pixels) ----->|
+              :                                         :         ---
+              :                                         :          A   Y shift
+          +-------+-------+-------+-------+-- ... --+-------+      |   0 - 7
+    R     | Tile  | Tile  | Tile  | Tile  |         | Tile  |      V   pixels
+    0 - - |   0   |   1   |   2   |   3   |         |  25   | - - ---
+          |       |       |       |       |         |       |      A
+       +--+----+--+----+--+----+--+----+--+- .. -+--+----+--+      |
+    R  | Tile  | Tile  | Tile  | Tile  |         | Tile  |         |
+    1  |   0   |   1   |   2   |   3   |         |  25   |         |
+       |       |       |       |       |         |       |         |
+       +-------+-------+-------+-------+-- ... --+-------+         |   Max.
+    R  | Tile  | Tile  | Tile  | Tile  |         | Tile  |         |   Visible
+    2  |   0   |   1   |   2   |   3   |         |  25   |         |   display
+       |       |       |       |       |         |       |         |   200
+       +-------+-------+-------+-------+-- ... --+-------+         |   lines
+       .       .       .       .       .         .       .         |
+              .       .       .       .         .       .       .  |
+              +-------+-------+-------+-- ... --+-------+-------+  |
+    R         | Tile  | Tile  | Tile  |         | Tile  | Tile  |  V
+    2 - - - - |   0   |   1   |   2   |         |  24   |  25   | ---
+    5         |       |       |       |         |       |       |
+              +-------+-------+-------+-- ... --+-------+-------+
+              :                                         :
+              :                                         :
+      |<----->|<---- Visible display (200 pixels) ----->|
+
+The Row Descriptors contain the tile map start location and X shift for the
+row, as you can see by the image, it is possible to set them arbitrarily for
+each row (useful for a parallax scroll effect).
+
+The background tileset itself has to be in the ATmega Flash, tile images are
+stored horizontal left to right, then vertical top to bottom order, high
+nybbles of bytes corresponding to the leftmost pixels. For example a 8x8
+pixel image of a letter 'P' could look like this: ::
+
+    uint8_t const tile_letter_p[32] SQ_SECTION_TILESET = {
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x00
+    };
+
+The tilesets must be located in SQ_SECTION_TILESET to make them accessible by
+the kernel.
+
+Along with the tileset, you can provide a mask set and mask data as well.
+These are used by the sprite blitter to allow for sprites showing behind the
+background when such a blitting option is selected.
+
+The mask set is a 256 byte table which must be located in SQ_SECTION_TILESET
+which describes which mask from the mask data each tile has to use. Two
+special values exist in this table:
+
+- 0xFE: No mask, the sprite shows over this tile.
+- 0xFF: Full mask, the sprite is completely hidden under this tile.
+
+You should use these as appropriate as they are the more optimal, eliminating
+the masking operation for the tile in question.
+
+The mask data is the masks used to identify pixels which should hide the
+sprite. A '1' bit in the mask hides the sprite, a '0' bit lets it showing. A
+single mask image by the letter 'P' example: ::
+
+    uint8_t const mask_letter_p[8] SQ_SECTION_TILESET = {
+     0xFC,
+     0xC6,
+     0xC6,
+     0xFC,
+     0xC0,
+     0xC0,
+     0xC0,
+     0x00
+    };
+
+
+
+SQ_SetTileBGOff
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTileBGOff(uint16_t bgoff, uint16_t width,
+                         uint16_t xpos, uint16_t ypos,
+                         uint8_t flags);
+
+Set up background with a scroll position. The bgoff parameter is the XRAM
+offset, the bank is provided by setting SQ_TRD_HIGHBANK in the flags
+parameter. The width specifies the width of the background tile map in tiles.
+
+The xpos and ypos parameters are scroll targets by which the routine will set
+up all the Row Descriptors accordingly, and also the Y shift.
+
+
+
+SQ_SetTileDesc
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTileDesc(uint16_t bgoff, uint16_t width,
+                        uint8_t flags);
+
+Set up background. The bgoff parameter is the XRAM offset, the bank is
+provided by setting SQ_TRD_HIGHBANK in the flags parameter. The width
+specifies the width of the background tile map in tiles.
+
+This function may be used if you don't need scrolling (otherwise use
+SQ_SetTileBGOff()).
+
+
+
+SQ_SetTileRowBGOff
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTileRowBGOff(uint8_t row, uint16_t bgoff,
+                            uint16_t xpos,
+                            uint8_t flags);
+
+Sets up a single tile row of the background with X scrolling. The bgoff
+parameter is the XRAM offset, the bank is provided by setting SQ_TRD_HIGHBANK
+in the flags parameter.
+
+The xpos parameter specifies the X scroll target of the row by which it will
+set up the Row Descriptor.
+
+
+
+SQ_SetTileRowDesc
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTileRowDesc(uint8_t row, uint16_t bgoff,
+                           uint8_t flags);
+
+Sets up a single tile row of the background. The bgoff parameter is the XRAM
+offset, the bank is provided by setting SQ_TRD_HIGHBANK in the flags
+parameter.
+
+You may provide the X shift (0 - 7) to the flags as well if you want to use
+this to implement fine control for a custom scrolling logic.
+
+
+
+SQ_SetTileset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetTileset(uint8_t const* tileset,
+                       uint8_t const* maskset,
+                       uint8_t const* maskdata);
+
+Sets up the background tileset. All three pointers must point to data in the
+ATmega Flash, in section SQ_SECTION_TILESET.
+
+If you don't want to use background masking, you may provide NULLs to maskset
+and maskdata.
+
+Note that if you want to use parts of a larger tileset (for example larger
+than 256 tiles, set up to allow for partial tileset swapping), the individual
+parts must begin at 256 byte boundaries, so at a multiple of 8 tile index.
+
+
+
+SQ_SetYShift
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetYShift(uint8_t yshift);
+
+Sets the Y shift, the number of pixels the topmost tile row is displaced above
+the beginning of the Tiles & Sprites display. It can be 0 - 7 pixels.
+
+You may use this to implement custom scrolling logic.
+
+
+
+
+
+Video - Sprites
+------------------------------------------------------------------------------
+
+
+The sprite support for the Tiles & Sprites mode is implemented in the form of
+a blitter, which operates as follows:
+
+- Copies off the region (tiles) covered by the sprite into Blitter Tiles.
+- Draws the sprite over them.
+- Marks the tiles for the display to display these modified tiles.
+
+So in essence you ask for draw operations, as many as you need to fill up your
+display with your sprites. This means that sprite blitting has its costs in
+CPU usage, however there are no limitations in horizontal sprite coverage
+(unlike hardware sprite engines of the 80s), and there are a couple of useful
+graphics operations you can apply to your sprite images.
+
+When done with a scene (frame), you can easily start a new, clean render by
+asking to clear up the sprites. This operation is not carried out
+automatically before starting the frame to allow for keeping a scene on-screen
+for more than one frame.
+
+Blitter Tiles can use a lot of RAM, up to 85 may be allocated for the sprite
+engine. You can adjust this as you need to free up RAM, which you can then
+request for other uses by SQ_GetBlitterTilePtr().
+
+The layout is as follows:
+
+- 0 - 1: These Blitter Tiles are always free as the sprite engine can't use
+  more than 85 of them.
+
+- 2 - 86: These are used by default by the sprite engine, you can control how
+  many may be used at most by SQ_SetMaxSpriteTiles(). Allocation begins at the
+  top, so for example giving 70 tiles to the sprite engine would cause it
+  using 17 - 86.
+
+- 87 - 99: These are occupied by internal structures of the Tiles & Sprites
+  mode and the sprite engine.
+
+When you are requesting sprite output, the screen coordinates work by the
+following representation: ::
+
+    8:8                   207:8
+    +---------------------+
+    |                     |
+    |  200 x 200 maximal  |
+    |  Tiles & Sprites    |
+    |  display            |
+    |                     |
+    |                     |
+    |                     |
+    |                     |
+    +---------------------+
+    8:207                 207:207
+
+The upper-leftmost visible pixel is at 8:8 and the lower-rightmost visible
+pixel is at 207:207.
+
+Sprite tiles use the same layout like background tiles with pixel value 0
+being transparent. An example with a letter 'P': ::
+
+    uint8_t const sprite_letter_p[32] SQ_SECTION_CONST = {
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x00, 0x01, 0x10,
+     0x11, 0x11, 0x11, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x11, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x00
+    };
+
+Note that you would have to copy this first into external memory (SPI RAM) to
+make it available for blitting.
+
+
+
+SQ_BlitSprite
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_BlitSprite(uint16_t xramoff,
+                       uint8_t xpos, uint8_t ypos,
+                       uint8_t flags);
+
+Blits a 8x8 sprite tile at the given screen position (8:8 is the upper left
+corner). The flags are as follows:
+
+- SQ_SPR_FLIPX: Flip source on X axis.
+- SQ_SPR_FLIPY: Flip source on Y axis.
+- SQ_SPR_HIGHBANK: Bank selection for the external memory (SPI RAM) source.
+- SQ_SPR_MASK: Blit the sprite with background mask.
+
+Clipping at the edges of the Tiles & Sprites display is done automatically.
+
+
+
+SQ_BlitSpriteCol
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_BlitSpriteCol(uint16_t xramoff,
+                          uint8_t xpos, uint8_t ypos,
+                          uint8_t flags, uint8_t coltabidx);
+
+Blits a 8x8 sprite tile at the given screen position (8:8 is the upper left
+corner) with color remapping. The flags are as follows:
+
+- SQ_SPR_FLIPX: Flip source on X axis.
+- SQ_SPR_FLIPY: Flip source on Y axis.
+- SQ_SPR_HIGHBANK: Bank selection for the external memory (SPI RAM) source.
+- SQ_SPR_MASK: Blit the sprite with background mask.
+
+Clipping at the edges of the Tiles & Sprites display is done automatically.
+
+By default no remapping tables are provided, so you can only call this with
+coltabidx set zero. You need to provide a color remapping table with
+SQ_SetSpriteColMaps() to make use of this function. The coltabidx parameter is
+a simple index into this table, so normally it should be a multiple of 16.
+
+
+
+SQ_ClearSprites
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_ClearSprites(void);
+
+Clears away sprites. This has to be called before starting blitting sprites
+for a new frame.
+
+
+
+SQ_SetMaxSpriteTiles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetMaxSpriteTiles(uint8_t count);
+
+Sets the maximal number of Blitter Tiles which the sprite engine can use. You
+can use this to limit the sprite engine if you need memory for other purposes.
+
+
+
+SQ_SetSpriteColMaps
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SetSpriteColMaps(uint8_t const* ptr);
+
+Sets color remapping tables for remapped blits with SQ_BlitSpriteCol. The
+color remapping tables need to be in SQ_SECTION_TILESET. The first remapping
+table must be straight, that is, your remapping table should look something
+like this: ::
+
+    uint8_t const color_remapping_table[] SQ_SECTION_TILESET = {
+     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+     ...
+    };
+
+Note that you can even remap the transparent pixel value or map other pixel
+values to transparent.
+
+
+
+SQ_SpritePixel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_SpritePixel(uint8_t col,
+                        uint8_t xpos, uint8_t ypos,
+                        uint8_t flags);
+
+Draw a single pixel at the given screen position (8:8 is the upper left
+corner). The flags are as follows:
+
+- SQ_SPR_MASK: Draw the pixel with background mask.
+
+Note that this is quite slow, but significantly faster than achieving a
+similar effect with a sprite tile, so use it when this is especially what you
+need.
+
+
+
+
+
+Video - Map extension
+------------------------------------------------------------------------------
+
+
+The map extension provides a simple and convenient abstraction for a
+free-scrolling map, allowing you to simply move around the viewport and place
+sprites at map coordinates. ::
+
+    0:0
+    +----------------------------+
+    | Map                        |
+    |             Sp             |
+    |        +---------+         |
+    |        | Display |   Sp    |
+    |        |         |         |
+    |        |       Sp|         |
+    |        +---------+         |
+    +----------------------------+
+
+So using this extension, you can have a coordinate system attached to your
+map, the origin being the map's upper left corner, and you can move around the
+display as a viewport over it (SQ_MAP_MoveTo()). Sprites can be placed on this
+map by map coordinates, the extension automatically taking care of clipping
+and only rendering what's actually on the display.
+
+
+
+SQ_MAP_BlitSprite
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MAP_BlitSprite(uint16_t xramoff,
+                           int16_t xpos, int16_t ypos,
+                           uint8_t flags);
+
+Blits a sprite by map coordinates. See SQ_BlitSprite().
+
+
+
+SQ_MAP_BlitSpriteCol
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MAP_BlitSpriteCol(uint16_t xramoff,
+                              int16_t xpos, int16_t ypos,
+                              uint8_t flags, uint8_t coltabidx);
+
+Blits a sprite with color remapping by map coordinates. See SQ_BlitSprite().
+
+
+
+SQ_MAP_Init
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MAP_Init(uint8_t xrambank, uint16_t xramoff,
+                     uint16_t width, uint16_t height);
+
+Initializes a map. The map dimensions (width and height) are given in tiles.
+
+
+
+SQ_MAP_MoveTo
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MAP_MoveTo(int16_t xpos, int16_t ypos);
+
+Moves the viewport over the map and clears the sprite engine. The movement is
+constrained within the map, that is the routine ensures that the display can
+not be moved across the map edges (so you don't need to implement such guards
+yourself).
+
+
+
+SQ_MAP_SpritePixel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Declaration: ::
+
+    void SQ_MAP_SpritePixel(uint8_t col,
+                            int16_t xpos, int16_t ypos,
+                            uint8_t flags);
+
+Draws a pixel by map coordinates. See SQ_SpritePixel().
