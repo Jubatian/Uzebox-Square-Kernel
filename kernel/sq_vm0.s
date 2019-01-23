@@ -348,12 +348,9 @@ vm0_leadout:
 	lpm   r0,      Z+
 	st    Y+,      r0
 	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0
-	rjmp  1f               ; (31)
+	lpm   r1,      Z+
+	lpm   ZL,      Z
+	rjmp  1f               ; (25)
 0:
 	ld    r0,      X+      ; ( 7)
 	ld    XL,      X
@@ -364,12 +361,12 @@ vm0_leadout:
 	ld    r0,      Z+
 	st    Y+,      r0
 	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
+	ld    r1,      Z+
+	ld    ZL,      Z
 1:
+	st    Y+,      r0
+	st    Y+,      r1
+	st    Y+,      ZL      ; (31)
 .endm
 
 
@@ -447,11 +444,9 @@ sq_vm0_scanline:
 	lpm   r0,      Z+
 	st    Y+,      r0
 	cbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; At cy 9
+	lpm   r1,      Z+
 	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0
-	rjmp  1f               ; (31)
+	rjmp  1f               ; (27)
 0:
 	ld    r0,      X+      ; ( 7)
 	ld    XL,      X
@@ -464,16 +459,16 @@ sq_vm0_scanline:
 	cbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; At cy 9
 	ld    r0,      Z+
 	st    Y+,      r0
+	ld    r1,      Z+
 	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
 1:
+	st    Y+,      r1
 	lds   ZL,      sq_mix_buf_rd
 	ldi   ZH,      hi8(sq_mix_buf)
 	ld    r1,      Z+
-	sts   _SFR_MEM_ADDR(OCR2A), r1 ; At cy 29; Output sound sample
+	sts   _SFR_MEM_ADDR(OCR2A), r1 ; At cy 27; Output sound sample
 	sts   sq_mix_buf_rd, ZL
+	st    Y+,      r0
 
 	;   30; Column 11 (31cy)
 
@@ -500,14 +495,11 @@ sq_vm0_scanline:
 	lpm   r0,      Z+
 	st    Y+,      r0
 	lpm   r0,      Z+
-	st    Y+,      r0
-	nop
+	lpm   r1,      Z+
 	sbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; At cy 145
-	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0
-	rjmp  1f               ; (31)
+	nop
+	lpm   ZL,      Z
+	rjmp  1f               ; (25)
 0:
 	ld    r0,      X+      ; ( 7)
 	ld    XL,      X
@@ -520,12 +512,12 @@ sq_vm0_scanline:
 	nop
 	sbi   _SFR_IO_ADDR(SYNC_PORT), SYNC_PIN ; At cy 145
 	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
+	ld    r1,      Z+
+	ld    ZL,      Z
 1:
+	st    Y+,      r0
+	st    Y+,      r1
+	st    Y+,      ZL
 
 	;  157; Column 15 (31cy)
 
@@ -579,30 +571,25 @@ sq_vm0_scanline:
 	movw  ZL,      r0
 	add   ZL,      r21     ; (12) r21: Row select
 	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
-	cbi   _SFR_IO_ADDR(PORTA), PA4 ; (+2) Select SPI RAM
-	ld    r0,      Z+
-	st    Y+,      r0
-	ld    r0,      Z+
-	st    Y+,      r0
-	rjmp  1f               ; (30)
+	ld    r1,      Z+
+	ld    XL,      Z+
+	ld    ZL,      Z
+	rjmp  1f               ; (22)
 0:
 	mul   r0,      r19     ; ( 7) r19 = 32
 	movw  ZL,      r0
 	add   ZH,      r20     ; ( 9) r20: ROM tileset base
 	add   ZL,      r21     ; (10) r21: Row select
 	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0
-	cbi   _SFR_IO_ADDR(PORTA), PA4 ; (+2) Select SPI RAM
-	lpm   r0,      Z+
-	st    Y+,      r0
-	lpm   r0,      Z+
-	st    Y+,      r0      ; (30)
+	lpm   r1,      Z+
+	lpm   XL,      Z+
+	lpm   ZL,      Z
 1:
+	cbi   _SFR_IO_ADDR(PORTA), PA4 ; (+2) Select SPI RAM
+	st    Y+,      r0
+	st    Y+,      r1
+	st    Y+,      XL
+	st    Y+,      ZL      ; (30)
 
 	;  500; Prepare next scanline
 
